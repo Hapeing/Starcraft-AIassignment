@@ -26,6 +26,12 @@ void ExampleAIModule::onStart()
     //Send each worker to the mineral field that is closest to it
     for(std::set<Unit*>::const_iterator i=Broodwar->self()->getUnits().begin();i!=Broodwar->self()->getUnits().end();i++)
     {
+
+		if((*i)->getType() == BWAPI::UnitTypes::Terran_Command_Center)
+		{
+			(*i)->train(BWAPI::UnitTypes::Terran_SCV);
+		}
+
 		if ((*i)->getType().isWorker())
 		{
 			Unit* closestMineral=NULL;
@@ -41,7 +47,7 @@ void ExampleAIModule::onStart()
 				(*i)->rightClick(closestMineral);
 				Broodwar->printf("Send worker %d to mineral %d", (*i)->getID(), closestMineral->getID());
 			}
-		}
+		} 
 	}
 }
 
@@ -53,6 +59,7 @@ void ExampleAIModule::onEnd(bool isWinner)
 	{
 		Broodwar->sendText("I won!");
 	}
+
 }
 
 //Finds a guard point around the home base.
@@ -83,6 +90,49 @@ Position ExampleAIModule::findGuardPoint()
 //shall be called.
 void ExampleAIModule::onFrame()
 {
+
+		//frtu14@eduroam.bth.se
+	//zsQ:v>jQ!lQ:
+	std::set<Unit*>::const_iterator k = Broodwar->self()->getUnits().begin();
+	for(std::set<Unit*>::const_iterator i=Broodwar->self()->getUnits().begin();i!=Broodwar->self()->getUnits().end();i++)
+	{
+		
+		//std::set<Unit*>::const_iterator k;
+		if((*i)->getType() == BWAPI::UnitTypes::Terran_Command_Center)
+		{
+			k = i;
+			(*k)->train(BWAPI::UnitTypes::Terran_SCV);
+		}
+		
+		if((*i)->getType().isWorker())
+		{
+			if((*k)->getType() == BWAPI::UnitTypes::Terran_Command_Center)
+			{
+
+				TilePosition *buildX = new TilePosition((*k)->getTilePosition().x() + 8, (*k)->getTilePosition().y());
+				//buildX = (*k)->getTilePosition();
+			//	(*i)->build(*buildX, BWAPI::UnitTypes::Terran_Barracks);	
+				if(Broodwar->canBuildHere((*i), *buildX, BWAPI::UnitTypes::Terran_Barracks))
+				{
+					(*i)->build(*buildX, BWAPI::UnitTypes::Terran_Barracks);	
+				}		
+
+				else
+				{
+				//	Broodwar->printf("Cannot build here");
+				}
+			}
+		}
+
+		if((*i)->getType() == BWAPI::UnitTypes::Terran_Command_Center)
+		{
+		/*	if(Broodwar->self()->allUnitCount(BWAPI::UnitTypes::Terran_SCV) < 19)
+			{
+				(*i)->train(BWAPI::UnitTypes::Terran_SCV);
+			}
+		*/
+		}
+	}
 	//Call every 100:th frame
 	if (Broodwar->getFrameCount() % 100 == 0)
 	{
@@ -94,14 +144,15 @@ void ExampleAIModule::onFrame()
 			if ((*i)->getType().isWorker())
 			{
 				//Find guard point
-				Position guardPoint = findGuardPoint();
+				//Position guardPoint = findGuardPoint();
 				//Order the worker to move to the guard point
-				(*i)->rightClick(guardPoint);
+				//(*i)->rightClick(guardPoint);
 				//Only send the first worker.
 				break;
 			}
 		}
 	}
+	
   
 	//Draw lines around regions, chokepoints etc.
 	if (analyzed)
@@ -319,7 +370,6 @@ void ExampleAIModule::drawTerrainData()
 		}
 	}
 }
-
 //Show player information.
 //No need to change this.
 void ExampleAIModule::showPlayers()
@@ -350,5 +400,30 @@ void ExampleAIModule::showForces()
 //Called when a unit has been completed, i.e. finished built.
 void ExampleAIModule::onUnitComplete(BWAPI::Unit *unit)
 {
-	//Broodwar->sendText("A %s [%x] has been completed at (%d,%d)",unit->getType().getName().c_str(),unit,unit->getPosition().x(),unit->getPosition().y());
+	if(unit->getPlayer() == Broodwar->self())
+	{
+	//	Broodwar->sendText("A %s [%x] has been completed at (%d,%d)",unit->getType().getName().c_str(),unit,unit->getPosition().x(),unit->getPosition().y());
+		int scvs = 0;
+		scvs = Broodwar->self()->completedUnitCount(BWAPI::UnitTypes::Terran_SCV);
+		//Broodwar->printf("blabla %i",scvs);
+	}
+
+	if (unit->getType().isWorker())
+		{
+			Unit* closestMineral=NULL;
+			for(std::set<Unit*>::iterator m=Broodwar->getMinerals().begin();m!=Broodwar->getMinerals().end();m++)
+			{
+				if (closestMineral==NULL || unit->getDistance(*m)<unit->getDistance(closestMineral))
+				{	
+					closestMineral=*m;
+				}
+			}
+			if (closestMineral!=NULL)
+			{
+				unit->rightClick(closestMineral);
+			//	Broodwar->printf("Send worker %d to mineral %d", unit->getID(), closestMineral->getID());
+			}
+		} 
 }
+
+
