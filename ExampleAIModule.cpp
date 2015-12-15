@@ -22,16 +22,16 @@ void ExampleAIModule::onStart()
 	analysis_just_finished=false;
 	//CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)AnalyzeThread, NULL, 0, NULL); //Threaded version
 	AnalyzeThread();
-
+	
     //Send each worker to the mineral field that is closest to it
     for(std::set<Unit*>::const_iterator i=Broodwar->self()->getUnits().begin();i!=Broodwar->self()->getUnits().end();i++)
     {
 		workers.push_back(*i);
 		if((*i)->getType() == BWAPI::UnitTypes::Terran_Command_Center)
 		{
-			(*i)->train(BWAPI::UnitTypes::Terran_SCV);
+			commandCenters.push_back((*i));
 		}
-
+		
 		if ((*i)->getType().isWorker())
 		{
 			Unit* closestMineral=NULL;
@@ -50,6 +50,7 @@ void ExampleAIModule::onStart()
 			}
 		} 
 	}
+	initializeBuildingPositions();
 }
 
 //Called when a game is ended.
@@ -92,148 +93,68 @@ Position ExampleAIModule::findGuardPoint()
 void ExampleAIModule::onFrame()
 {
 	bool oneWorkerSelected = true;
-	std::set<Unit*>::const_iterator k = Broodwar->self()->getUnits().begin();
 
 	for(std::vector<Unit*>::iterator i = workers.begin(); i!=workers.end();i++)
 	{
-		for(std::set<Unit*>::const_iterator j=Broodwar->self()->getUnits().begin();j!=Broodwar->self()->getUnits().end();j++)
+		/*for(std::set<Unit*>::const_iterator g=Broodwar->getGeysers().begin();g!=Broodwar->getGeysers().end();g++)
 		{
-			if((*j)->getType() == BWAPI::UnitTypes::Terran_Command_Center)
+			Unit* closestGeyser=NULL;
+			if (closestGeyser==NULL || (*i)->getDistance(*g)<(*i)->getDistance(closestGeyser))
 			{
-				k = j;
-			}
-		}
-
-		if((*k)->getType() == BWAPI::UnitTypes::Terran_Command_Center  && oneWorkerSelected &&(*i)->isConstructing())
-		{
-			oneWorkerSelected = false;
-			TilePosition *buildBarracks = new TilePosition((*k)->getTilePosition().x() + 8, (*k)->getTilePosition().y());
-			TilePosition *buildSupplyDepot = new TilePosition((*k)->getTilePosition().x(), (*k)->getTilePosition().y() + 8);
-			//build Barracks to the right
-			if(buildAtPos((*i), *buildBarracks, BWAPI::UnitTypes::Terran_Barracks))
-			{	
-				oneWorkerSelected = true;
-			}
-			else
-			{
-				buildBarracks->x() =  buildBarracks->x()-16;
-				if(buildAtPos((*i), *buildBarracks, BWAPI::UnitTypes::Terran_Barracks))
+				closestGeyser=*g;
+				if((*i)->getDistance(*g) < 300 && oneWorkerSelected && !(*i)->isConstructing())
 				{
-					oneWorkerSelected = true;
+					TilePosition *buildRefinery = new TilePosition((*g)->getTilePosition().x(), (*g)->getTilePosition().y());
+					if(buildAtPos((*i), *buildRefinery, BWAPI::UnitTypes::Terran_Refinery))
+					{
+						
+					}	
 				}
 			}
-			if(buildAtPos((*i), *buildSupplyDepot, BWAPI::UnitTypes::Terran_Supply_Depot) && Broodwar->self()->supplyUsed() == Broodwar->self()->supplyTotal())
-			{
-				oneWorkerSelected = true;
-			}
-			else
-			{
-				buildSupplyDepot->y() = buildSupplyDepot->y()-16;
-				if(buildAtPos((*i), *buildSupplyDepot, BWAPI::UnitTypes::Terran_Supply_Depot) && Broodwar->self()->supplyUsed() == Broodwar->self()->supplyTotal())
-				{
-					oneWorkerSelected = true;
-				}
-			}
-		}
-		//oneWorkerSelected = true;
-		/*if((*i)->getType() == BWAPI::UnitTypes::Terran_Barracks)
-		{
-			if(Broodwar->self()->allUnitCount(BWAPI::UnitTypes::Terran_Marine) < 40)
-			{
-				(*i)->train(BWAPI::UnitTypes::Terran_Marine);
-			}
-
 		}*/
-		if((*k)->getType() == BWAPI::UnitTypes::Terran_Command_Center)
+
+		if(oneWorkerSelected)
 		{
-			if(Broodwar->self()->allUnitCount(BWAPI::UnitTypes::Terran_SCV) < 19)
-			{
-				(*k)->train(BWAPI::UnitTypes::Terran_SCV);
+			//build Barracks to the right
+			if(buildAtPos((*i), *buildingPos.at(0), BWAPI::UnitTypes::Terran_Barracks))
+			{	
+				
 			}
+			else
+			{
+				//to the left
+				if(buildAtPos((*i), *buildingPos.at(2), BWAPI::UnitTypes::Terran_Barracks))
+				{
+				
+				}
+			}
+			//build Supply depot downwards
+			if(buildAtPos((*i), *buildingPos.at(1), BWAPI::UnitTypes::Terran_Supply_Depot) && Broodwar->self()->supplyUsed() == Broodwar->self()->supplyTotal())
+			{
+				
+			}
+			else
+			{
+				//upwards
+				if(buildAtPos((*i), *buildingPos.at(3), BWAPI::UnitTypes::Terran_Supply_Depot) && Broodwar->self()->supplyUsed() == Broodwar->self()->supplyTotal())
+				{
+					
+				}
+			}
+		}
+		if(Broodwar->self()->allUnitCount(BWAPI::UnitTypes::Terran_Marine) < 40)
+		{
+			if(barracks.size() > 0)
+			{
+				barracks.at(0)->train(BWAPI::UnitTypes::Terran_Marine);
+			}
+		}
+
+		if(Broodwar->self()->allUnitCount(BWAPI::UnitTypes::Terran_SCV) < 19)
+		{
+			commandCenters.at(0)->train(BWAPI::UnitTypes::Terran_SCV);
 		}
 	}
-
-	/*for(std::set<Unit*>::const_iterator i=Broodwar->self()->getUnits().begin();i!=Broodwar->self()->getUnits().end();i++)
-	{
-		if((*i)->getType() == BWAPI::UnitTypes::Terran_Command_Center)
-		{
-			k = i;
-		}
-		
-		if((*i)->getType().isWorker())
-		{
-			/*for(std::set<Unit*>::const_iterator g=Broodwar->getGeysers().begin();g!=Broodwar->getGeysers().end();g++)
-			{
-				Unit* closestGeyser=NULL;
-				
-				if (closestGeyser==NULL || (*i)->getDistance(*g)<(*i)->getDistance(closestGeyser))
-				{
-					Broodwar->printf("%i", (*i)->getDistance(*g));
-					closestGeyser=*g;
-
-					if((*i)->getDistance(*g) < 300)
-					{
-						//(*i)->rightClick(closestGeyser);
-						TilePosition *buildRefinery = new TilePosition((*g)->getTilePosition().x(), (*g)->getTilePosition().y());
-						if(Broodwar->canBuildHere((*i), *buildRefinery, BWAPI::UnitTypes::Terran_Refinery))
-						{
-							(*i)->build(*buildRefinery, BWAPI::UnitTypes::Terran_Refinery);	
-						}	
-					}
-				}
-			}
-
-			if((*k)->getType() == BWAPI::UnitTypes::Terran_Command_Center  && oneWorkerSelected && !(*i)->isConstructing())
-			{
-				oneWorkerSelected = false;
-				TilePosition *buildBarracks = new TilePosition((*k)->getTilePosition().x() + 8, (*k)->getTilePosition().y());
-				TilePosition *buildSupplyDepot = new TilePosition((*k)->getTilePosition().x(), (*k)->getTilePosition().y() + 8);
-				//build Barracks to the right
-				if(buildAtPos((*i), *buildBarracks, BWAPI::UnitTypes::Terran_Barracks))
-				{	
-					oneWorkerSelected = true;
-				}
-				else
-				{
-					buildBarracks->x() =  buildBarracks->x()-16;
-					if(buildAtPos((*i), *buildBarracks, BWAPI::UnitTypes::Terran_Barracks))
-					{
-						oneWorkerSelected = true;
-					}
-				}
-				if(buildAtPos((*i), *buildSupplyDepot, BWAPI::UnitTypes::Terran_Supply_Depot) && Broodwar->self()->supplyUsed() == Broodwar->self()->supplyTotal())
-				{
-					oneWorkerSelected = true;
-				}
-				else
-				{
-					buildSupplyDepot->y() = buildSupplyDepot->y()-16;
-					if(buildAtPos((*i), *buildSupplyDepot, BWAPI::UnitTypes::Terran_Supply_Depot) && Broodwar->self()->supplyUsed() == Broodwar->self()->supplyTotal())
-					{
-						oneWorkerSelected = true;
-					}
-				}
-			}
-			//oneWorkerSelected = true;
-		}
-		
-		if((*i)->getType() == BWAPI::UnitTypes::Terran_Barracks)
-		{
-			if(Broodwar->self()->allUnitCount(BWAPI::UnitTypes::Terran_Marine) < 40)
-			{
-				(*i)->train(BWAPI::UnitTypes::Terran_Marine);
-			}
-
-		}
-		if((*i)->getType() == BWAPI::UnitTypes::Terran_Command_Center)
-		{
-			if(Broodwar->self()->allUnitCount(BWAPI::UnitTypes::Terran_SCV) < 19)
-			{
-				(*i)->train(BWAPI::UnitTypes::Terran_SCV);
-			}
-		
-		}
-	}*/
 	//Call every 100:th frame
 	if (Broodwar->getFrameCount() % 100 == 0)
 	{
@@ -254,7 +175,6 @@ void ExampleAIModule::onFrame()
 		}
 	}
 	
-  
 	//Draw lines around regions, chokepoints etc.
 	if (analyzed)
 	{
@@ -510,32 +430,62 @@ void ExampleAIModule::onUnitComplete(BWAPI::Unit *unit)
 		//Broodwar->printf("blabla %i",scvs);
 	}
 
+	if(unit->getType() == BWAPI::UnitTypes::Terran_Factory)
+	{
+		factories.push_back(unit);
+	}
+
+	if(unit->getType() == BWAPI::UnitTypes::Terran_Barracks)
+	{
+		barracks.push_back(unit);
+	}
+
+	if(unit->getType() == BWAPI::UnitTypes::Terran_Command_Center)
+	{
+		commandCenters.push_back(unit);
+	}
+
 	if (unit->getType().isWorker())
+	{
+		workers.push_back(unit);
+		Unit* closestMineral=NULL;
+		for(std::set<Unit*>::iterator m=Broodwar->getMinerals().begin();m!=Broodwar->getMinerals().end();m++)
 		{
-			workers.push_back(unit);
-			Unit* closestMineral=NULL;
-			for(std::set<Unit*>::iterator m=Broodwar->getMinerals().begin();m!=Broodwar->getMinerals().end();m++)
-			{
-				if (closestMineral==NULL || unit->getDistance(*m)<unit->getDistance(closestMineral))
-				{	
-					closestMineral=*m;
-				}
+			if (closestMineral==NULL || unit->getDistance(*m)<unit->getDistance(closestMineral))
+			{	
+				closestMineral=*m;
 			}
-			if (closestMineral!=NULL)
-			{
-				unit->rightClick(closestMineral);
-			//	Broodwar->printf("Send worker %d to mineral %d", unit->getID(), closestMineral->getID());
-			}
-		} 
+		}
+		if (closestMineral!=NULL)
+		{
+			unit->rightClick(closestMineral);
+		//	Broodwar->printf("Send worker %d to mineral %d", unit->getID(), closestMineral->getID());
+		}
+	} 
 	Broodwar->printf("%i", workers.size());
 }
 //Building a building
 bool ExampleAIModule::buildAtPos(Unit* worker, TilePosition pos, BWAPI::UnitType building)
 {
+	//(*worker).
 	if(Broodwar->canBuildHere(worker, pos, building))
 	{
 		(*worker).build(pos, building);
 		return true;
 	}
 	return false;
+}
+//define all building positions in the base
+void ExampleAIModule::initializeBuildingPositions()
+{
+		//positions for upper starting position
+		TilePosition *buildBarracks = new TilePosition((*commandCenters.at(0)).getTilePosition().x() + 8, (*commandCenters.at(0)).getTilePosition().y());
+		TilePosition *buildSupplyDepot = new TilePosition((*commandCenters.at(0)).getTilePosition().x(), (*commandCenters.at(0)).getTilePosition().y() + 8);
+		buildingPos.push_back(buildBarracks);
+		buildingPos.push_back(buildSupplyDepot);
+		//positions for lower starting position
+		buildBarracks->x() =  buildBarracks->x()-16;
+		buildSupplyDepot->y() = buildSupplyDepot->y()-16;
+		buildingPos.push_back(buildBarracks);
+		buildingPos.push_back(buildSupplyDepot);
 }
