@@ -54,4 +54,5 @@ private:
 	std::vector <Unit*> refineries;
 	std::vector <Unit*> toBuild;
 	std::vector <TilePosition*> buildingPos; 
+	int posMultiplier;
 };

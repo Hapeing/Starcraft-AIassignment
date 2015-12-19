@@ -22,18 +22,38 @@ void ExampleAIModule::onStart()
 	analysis_just_finished=false;
 	//CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)AnalyzeThread, NULL, 0, NULL); //Threaded version
 	AnalyzeThread();
-	
+	this->posMultiplier = 1;
+
     //Send each worker to the mineral field that is closest to it
     for(std::set<Unit*>::const_iterator i=Broodwar->self()->getUnits().begin();i!=Broodwar->self()->getUnits().end();i++)
     {
-		workers.push_back(*i);
+		
+
+
 		if((*i)->getType() == BWAPI::UnitTypes::Terran_Command_Center)
 		{
 			commandCenters.push_back((*i));
+			Unit* closestMineral=NULL;
+			for(std::set<Unit*>::iterator m=Broodwar->getMinerals().begin();m!=Broodwar->getMinerals().end();m++)
+			{
+				if (closestMineral==NULL || (*i)->getDistance(*m)<(*i)->getDistance(closestMineral))
+				{	
+					closestMineral=*m;
+
+				}
+			}
+			if (closestMineral != NULL)
+			{
+				if (closestMineral->getPosition().x() > this->commandCenters.at(0)->getPosition().x() || closestMineral->getPosition().y() > this->commandCenters.at(0)->getPosition().y())
+				{
+					this->posMultiplier = -1;
+				}
+			}
 		}
-		
+
 		if ((*i)->getType().isWorker())
 		{
+			workers.push_back(*i);
 			Unit* closestMineral=NULL;
 			for(std::set<Unit*>::iterator m=Broodwar->getMinerals().begin();m!=Broodwar->getMinerals().end();m++)
 			{
@@ -46,10 +66,11 @@ void ExampleAIModule::onStart()
 			{
 				workers.at(0)->rightClick(closestMineral);
 				//(*i)->rightClick(closestMineral);
-				Broodwar->printf("Send worker %d to mineral %d", (*i)->getID(), closestMineral->getID());
+				//Broodwar->printf("Send worker %d to mineral %d", (*i)->getID(), closestMineral->getID());
 			}
 		} 
 	}
+	//Broodwar->printf("%i", this->posMultiplier);
 	initializeBuildingPositions();
 }
 
@@ -104,15 +125,14 @@ void ExampleAIModule::onFrame()
 		oneWorkerSelected = true;
 	}
 
-	if(Broodwar->self()->gatheredMinerals() >= 200 && Broodwar->self()->gatheredGas() >= 50 && !factories.empty())
+	if(Broodwar->self()->gatheredMinerals() >= 200 && Broodwar->self()->gatheredGas() >= 100 && !factories.empty())
 	{
 		oneWorkerSelected = true;
 	}
 
-
 	for(std::vector<Unit*>::iterator i = workers.begin(); i!=workers.end();i++)
 	{
-		/*for(std::set<Unit*>::const_iterator g=Broodwar->getGeysers().begin();g!=Broodwar->getGeysers().end();g++)
+		for(std::set<Unit*>::const_iterator g=Broodwar->getGeysers().begin();g!=Broodwar->getGeysers().end();g++)
 		{
 			Unit* closestGeyser=NULL;
 			if (closestGeyser==NULL || (*i)->getDistance(*g)<(*i)->getDistance(closestGeyser))
@@ -127,41 +147,17 @@ void ExampleAIModule::onFrame()
 					}	
 				}
 			}
-		}*/
+		}
 
 		if(oneWorkerSelected)
 		{
 			oneWorkerSelected = false;
-			//build Barracks to the right
-			if(buildAtPos((*i), *buildingPos.at(0), BWAPI::UnitTypes::Terran_Barracks))
-			{	
-				
-			}
-			else
-			{
-				//to the left
-				if(buildAtPos((*i), *buildingPos.at(2), BWAPI::UnitTypes::Terran_Barracks))
-				{
-				
-				}
-			}
-			//build Supply depot downwards
-			if(buildAtPos((*i), *buildingPos.at(1), BWAPI::UnitTypes::Terran_Supply_Depot) && Broodwar->self()->supplyUsed() == Broodwar->self()->supplyTotal())
-			{
-				
-			}
-			else
-			{
-				//upwards
-				if(buildAtPos((*i), *buildingPos.at(3), BWAPI::UnitTypes::Terran_Supply_Depot) && Broodwar->self()->supplyUsed() == Broodwar->self()->supplyTotal())
-				{
-					
-				}
-			}
+			buildAtPos((*i), *buildingPos.at(1), BWAPI::UnitTypes::Terran_Supply_Depot);
+			buildAtPos((*i), *buildingPos.at(0), BWAPI::UnitTypes::Terran_Barracks);
 		}
 		if(Broodwar->self()->allUnitCount(BWAPI::UnitTypes::Terran_Marine) < 40)
 		{
-			if(!barracks.empty())
+			if(barracks.size() > 0)
 			{
 				barracks.at(0)->train(BWAPI::UnitTypes::Terran_Marine);
 			}
@@ -172,6 +168,17 @@ void ExampleAIModule::onFrame()
 			commandCenters.at(0)->train(BWAPI::UnitTypes::Terran_SCV);
 		}
 	}
+
+	//for(std::set<Unit*>::const_iterator i=Broodwar->self()->getUnits().begin();i!=Broodwar->self()->getUnits().end();i++)
+ //   {
+	//	if ((*i)->getType() == BWAPI::UnitTypes::Terran_Refinery)
+	//	{
+	//		this->workers.at(3)->rightClick((*i));
+	//		/*Broodwar->printf("built refinery");
+	//		Broodwar->sendText("built refinery");*/
+	//	}
+	//}
+
 	//Call every 100:th frame
 	if (Broodwar->getFrameCount() % 100 == 0)
 	{
@@ -179,6 +186,15 @@ void ExampleAIModule::onFrame()
 		//Iterate through the list of units.
 		for(std::set<Unit*>::const_iterator i=Broodwar->self()->getUnits().begin();i!=Broodwar->self()->getUnits().end();i++)
 		{
+
+		if ((*i)->getType() == BWAPI::UnitTypes::Terran_Refinery)
+		{
+			if ((*i)->isCompleted());
+			{
+				this->workers.at(3)->rightClick((*i));
+				this->workers.at(2)->rightClick((*i));
+			}
+		}
 			//Check if unit is a worker.
 			if ((*i)->getType().isWorker())
 			{
@@ -439,34 +455,16 @@ void ExampleAIModule::showForces()
 //Called when a unit has been completed, i.e. finished built.
 void ExampleAIModule::onUnitComplete(BWAPI::Unit *unit)
 {
+
 	if(unit->getPlayer() == Broodwar->self())
 	{
-	//	Broodwar->sendText("A %s [%x] has been completed at (%d,%d)",unit->getType().getName().c_str(),unit,unit->getPosition().x(),unit->getPosition().y());
+		Broodwar->sendText("A %s [%x] has been completed at (%d,%d)",unit->getType().getName().c_str(),unit,unit->getPosition().x(),unit->getPosition().y());
 		int scvs = 0;
 		scvs = Broodwar->self()->completedUnitCount(BWAPI::UnitTypes::Terran_SCV);
 		//Broodwar->printf("blabla %i",scvs);
 	}
 
-	if(unit->getType() == BWAPI::UnitTypes::Terran_Medic)
-	{
-		medics.push_back(unit);
-		Position guardPoint = findGuardPoint();
-		unit->rightClick(guardPoint);
-	}
-
-	else if(unit->getType() == BWAPI::UnitTypes::Terran_Marine)
-	{
-		marines.push_back(unit);
-		Position guardPoint = findGuardPoint();
-		unit->rightClick(guardPoint);
-	}
-
-	else if(unit->getType() == BWAPI::UnitTypes::Terran_Refinery)
-	{
-		refineries.push_back(unit);
-	}
-
-	else if(unit->getType() == BWAPI::UnitTypes::Terran_Factory)
+	if(unit->getType() == BWAPI::UnitTypes::Terran_Factory)
 	{
 		factories.push_back(unit);
 	}
@@ -483,7 +481,6 @@ void ExampleAIModule::onUnitComplete(BWAPI::Unit *unit)
 
 	else if (unit->getType().isWorker())
 	{
-
 		workers.push_back(unit);
 		Unit* closestMineral=NULL;
 		for(std::set<Unit*>::iterator m=Broodwar->getMinerals().begin();m!=Broodwar->getMinerals().end();m++)
@@ -515,15 +512,9 @@ bool ExampleAIModule::buildAtPos(Unit* worker, TilePosition pos, BWAPI::UnitType
 //define all building positions in the base
 void ExampleAIModule::initializeBuildingPositions()
 {
-	
 		//positions for upper starting position
-		TilePosition *buildBarracks = new TilePosition((*commandCenters.at(0)).getTilePosition().x() + 8, (*commandCenters.at(0)).getTilePosition().y());
-		TilePosition *buildSupplyDepot = new TilePosition((*commandCenters.at(0)).getTilePosition().x(), (*commandCenters.at(0)).getTilePosition().y() + 8);
-		buildingPos.push_back(buildBarracks);
-		buildingPos.push_back(buildSupplyDepot);
-		//positions for lower starting position
-		buildBarracks->x() =  buildBarracks->x()-16;
-		buildSupplyDepot->y() = buildSupplyDepot->y()-16;
+		TilePosition *buildBarracks = new TilePosition((*commandCenters.at(0)).getTilePosition().x() + 8 * this->posMultiplier, (*commandCenters.at(0)).getTilePosition().y());
+		TilePosition *buildSupplyDepot = new TilePosition((*commandCenters.at(0)).getTilePosition().x(), (*commandCenters.at(0)).getTilePosition().y() + 8 * this->posMultiplier);
 		buildingPos.push_back(buildBarracks);
 		buildingPos.push_back(buildSupplyDepot);
 }
