@@ -94,6 +94,22 @@ void ExampleAIModule::onFrame()
 {
 	bool oneWorkerSelected = true;
 
+	if(Broodwar->self()->gatheredMinerals() >= 150 && !barracks.empty())
+	{
+		oneWorkerSelected = true;
+	}
+	
+	if(Broodwar->self()->gatheredMinerals() >= 100)
+	{
+		oneWorkerSelected = true;
+	}
+
+	if(Broodwar->self()->gatheredMinerals() >= 200 && Broodwar->self()->gatheredGas() >= 50 && !factories.empty())
+	{
+		oneWorkerSelected = true;
+	}
+
+
 	for(std::vector<Unit*>::iterator i = workers.begin(); i!=workers.end();i++)
 	{
 		/*for(std::set<Unit*>::const_iterator g=Broodwar->getGeysers().begin();g!=Broodwar->getGeysers().end();g++)
@@ -115,6 +131,7 @@ void ExampleAIModule::onFrame()
 
 		if(oneWorkerSelected)
 		{
+			oneWorkerSelected = false;
 			//build Barracks to the right
 			if(buildAtPos((*i), *buildingPos.at(0), BWAPI::UnitTypes::Terran_Barracks))
 			{	
@@ -144,7 +161,7 @@ void ExampleAIModule::onFrame()
 		}
 		if(Broodwar->self()->allUnitCount(BWAPI::UnitTypes::Terran_Marine) < 40)
 		{
-			if(barracks.size() > 0)
+			if(!barracks.empty())
 			{
 				barracks.at(0)->train(BWAPI::UnitTypes::Terran_Marine);
 			}
@@ -430,23 +447,43 @@ void ExampleAIModule::onUnitComplete(BWAPI::Unit *unit)
 		//Broodwar->printf("blabla %i",scvs);
 	}
 
-	if(unit->getType() == BWAPI::UnitTypes::Terran_Factory)
+	if(unit->getType() == BWAPI::UnitTypes::Terran_Medic)
+	{
+		medics.push_back(unit);
+		Position guardPoint = findGuardPoint();
+		unit->rightClick(guardPoint);
+	}
+
+	else if(unit->getType() == BWAPI::UnitTypes::Terran_Marine)
+	{
+		marines.push_back(unit);
+		Position guardPoint = findGuardPoint();
+		unit->rightClick(guardPoint);
+	}
+
+	else if(unit->getType() == BWAPI::UnitTypes::Terran_Refinery)
+	{
+		refineries.push_back(unit);
+	}
+
+	else if(unit->getType() == BWAPI::UnitTypes::Terran_Factory)
 	{
 		factories.push_back(unit);
 	}
 
-	if(unit->getType() == BWAPI::UnitTypes::Terran_Barracks)
+	else if(unit->getType() == BWAPI::UnitTypes::Terran_Barracks)
 	{
 		barracks.push_back(unit);
 	}
 
-	if(unit->getType() == BWAPI::UnitTypes::Terran_Command_Center)
+	else if(unit->getType() == BWAPI::UnitTypes::Terran_Command_Center)
 	{
 		commandCenters.push_back(unit);
 	}
 
-	if (unit->getType().isWorker())
+	else if (unit->getType().isWorker())
 	{
+
 		workers.push_back(unit);
 		Unit* closestMineral=NULL;
 		for(std::set<Unit*>::iterator m=Broodwar->getMinerals().begin();m!=Broodwar->getMinerals().end();m++)
@@ -478,6 +515,7 @@ bool ExampleAIModule::buildAtPos(Unit* worker, TilePosition pos, BWAPI::UnitType
 //define all building positions in the base
 void ExampleAIModule::initializeBuildingPositions()
 {
+	
 		//positions for upper starting position
 		TilePosition *buildBarracks = new TilePosition((*commandCenters.at(0)).getTilePosition().x() + 8, (*commandCenters.at(0)).getTilePosition().y());
 		TilePosition *buildSupplyDepot = new TilePosition((*commandCenters.at(0)).getTilePosition().x(), (*commandCenters.at(0)).getTilePosition().y() + 8);
