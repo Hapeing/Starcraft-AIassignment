@@ -48,10 +48,12 @@ public:
 private:
 	std::vector <Unit*> workers;
 	std::vector <Unit*> marines;
+	std::vector <Unit*> medics;
 	std::vector <Unit*> commandCenters;
 	std::vector <Unit*> barracks;
 	std::vector <Unit*> factories;
-	std::vector <Unit*> refineries;
+	std::vector <Unit*> academies;
 	std::vector <Unit*> toBuild;
 	std::vector <TilePosition*> buildingPos; 
+	Unit* refinery;
 };

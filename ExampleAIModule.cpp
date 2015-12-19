@@ -5,7 +5,7 @@ bool analyzed;
 bool analysis_just_finished;
 BWTA::Region* home;
 BWTA::Region* enemy_base;
-
+Unit* closestGeyser=NULL;
 //This is the startup method. It is called once
 //when a new game has been started with the bot.
 void ExampleAIModule::onStart()
@@ -104,17 +104,21 @@ void ExampleAIModule::onFrame()
 		oneWorkerSelected = true;
 	}
 
-	if(Broodwar->self()->gatheredMinerals() >= 200 && Broodwar->self()->gatheredGas() >= 50 && !factories.empty())
+	if(Broodwar->self()->gatheredMinerals() >= 200 && Broodwar->self()->gatheredGas() >= 100 && !factories.empty())
 	{
 		oneWorkerSelected = true;
 	}
 
+	if(Broodwar->self()->gatheredMinerals() >= 150 && !academies.empty())
+	{
+		oneWorkerSelected = true;
+	}
 
 	for(std::vector<Unit*>::iterator i = workers.begin(); i!=workers.end();i++)
 	{
-		/*for(std::set<Unit*>::const_iterator g=Broodwar->getGeysers().begin();g!=Broodwar->getGeysers().end();g++)
+		for(std::set<Unit*>::const_iterator g=Broodwar->getGeysers().begin();g!=Broodwar->getGeysers().end();g++)
 		{
-			Unit* closestGeyser=NULL;
+	//		Unit* closestGeyser=NULL;
 			if (closestGeyser==NULL || (*i)->getDistance(*g)<(*i)->getDistance(closestGeyser))
 			{
 				closestGeyser=*g;
@@ -123,11 +127,10 @@ void ExampleAIModule::onFrame()
 					TilePosition *buildRefinery = new TilePosition((*g)->getTilePosition().x(), (*g)->getTilePosition().y());
 					if(buildAtPos((*i), *buildRefinery, BWAPI::UnitTypes::Terran_Refinery))
 					{
-						
 					}	
 				}
 			}
-		}*/
+		}
 
 		if(oneWorkerSelected)
 		{
@@ -153,7 +156,7 @@ void ExampleAIModule::onFrame()
 			else
 			{
 				//upwards
-				if(buildAtPos((*i), *buildingPos.at(3), BWAPI::UnitTypes::Terran_Supply_Depot) && Broodwar->self()->supplyUsed() == Broodwar->self()->supplyTotal())
+				if(buildAtPos((*i), *buildingPos.at(2), BWAPI::UnitTypes::Terran_Supply_Depot) && Broodwar->self()->supplyUsed() == Broodwar->self()->supplyTotal())
 				{
 					
 				}
@@ -179,6 +182,12 @@ void ExampleAIModule::onFrame()
 		//Iterate through the list of units.
 		for(std::set<Unit*>::const_iterator i=Broodwar->self()->getUnits().begin();i!=Broodwar->self()->getUnits().end();i++)
 		{
+			if((*i)->getType() == BWAPI::UnitTypes::Terran_Refinery)
+			{
+				this->workers.at(2)->rightClick((*i));
+				this->workers.at(3)->rightClick((*i));
+				refinery = *i;
+			}
 			//Check if unit is a worker.
 			if ((*i)->getType().isWorker())
 			{
@@ -199,7 +208,7 @@ void ExampleAIModule::onFrame()
 	}
 	
 }
-
+	
 //Is called when text is written in the console window.
 //Can be used to toggle stuff on and off.
 void ExampleAIModule::onSendText(std::string text)
@@ -461,11 +470,6 @@ void ExampleAIModule::onUnitComplete(BWAPI::Unit *unit)
 		unit->rightClick(guardPoint);
 	}
 
-	else if(unit->getType() == BWAPI::UnitTypes::Terran_Refinery)
-	{
-		refineries.push_back(unit);
-	}
-
 	else if(unit->getType() == BWAPI::UnitTypes::Terran_Factory)
 	{
 		factories.push_back(unit);
@@ -483,7 +487,6 @@ void ExampleAIModule::onUnitComplete(BWAPI::Unit *unit)
 
 	else if (unit->getType().isWorker())
 	{
-
 		workers.push_back(unit);
 		Unit* closestMineral=NULL;
 		for(std::set<Unit*>::iterator m=Broodwar->getMinerals().begin();m!=Broodwar->getMinerals().end();m++)
@@ -517,13 +520,17 @@ void ExampleAIModule::initializeBuildingPositions()
 {
 	
 		//positions for upper starting position
-		TilePosition *buildBarracks = new TilePosition((*commandCenters.at(0)).getTilePosition().x() + 8, (*commandCenters.at(0)).getTilePosition().y());
-		TilePosition *buildSupplyDepot = new TilePosition((*commandCenters.at(0)).getTilePosition().x(), (*commandCenters.at(0)).getTilePosition().y() + 8);
+		TilePosition *buildBarracks = new TilePosition((*commandCenters.at(0)).getTilePosition().x() + 6, (*commandCenters.at(0)).getTilePosition().y());
+		TilePosition *buildSupplyDepot = new TilePosition((*commandCenters.at(0)).getTilePosition().x(), (*commandCenters.at(0)).getTilePosition().y() + 4);
+		TilePosition *buildSupplyDepot2 = new TilePosition((*commandCenters.at(0)).getTilePosition().x()+3, (*commandCenters.at(0)).getTilePosition().y() + 4);
 		buildingPos.push_back(buildBarracks);
 		buildingPos.push_back(buildSupplyDepot);
+		buildingPos.push_back(buildSupplyDepot2);
 		//positions for lower starting position
-		buildBarracks->x() =  buildBarracks->x()-16;
-		buildSupplyDepot->y() = buildSupplyDepot->y()-16;
-		buildingPos.push_back(buildBarracks);
-		buildingPos.push_back(buildSupplyDepot);
+		TilePosition *buildBarracks2 = new TilePosition((*commandCenters.at(0)).getTilePosition().x() -6, (*commandCenters.at(0)).getTilePosition().y());
+		TilePosition *buildSupplyDepot3 = new TilePosition((*commandCenters.at(0)).getTilePosition().x(), (*commandCenters.at(0)).getTilePosition().y() - 6);
+		TilePosition *buildSupplyDepot4 = new TilePosition((*commandCenters.at(0)).getTilePosition().x() -3, (*commandCenters.at(0)).getTilePosition().y() - 6);
+		buildingPos.push_back(buildBarracks2);
+		buildingPos.push_back(buildSupplyDepot3);
+		buildingPos.push_back(buildSupplyDepot4);
 }
