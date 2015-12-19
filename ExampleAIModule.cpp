@@ -22,18 +22,38 @@ void ExampleAIModule::onStart()
 	analysis_just_finished=false;
 	//CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)AnalyzeThread, NULL, 0, NULL); //Threaded version
 	AnalyzeThread();
-	
+	this->posMultiplier = 1;
+
     //Send each worker to the mineral field that is closest to it
     for(std::set<Unit*>::const_iterator i=Broodwar->self()->getUnits().begin();i!=Broodwar->self()->getUnits().end();i++)
     {
-		workers.push_back(*i);
+		
+
+
 		if((*i)->getType() == BWAPI::UnitTypes::Terran_Command_Center)
 		{
 			commandCenters.push_back((*i));
+			Unit* closestMineral=NULL;
+			for(std::set<Unit*>::iterator m=Broodwar->getMinerals().begin();m!=Broodwar->getMinerals().end();m++)
+			{
+				if (closestMineral==NULL || (*i)->getDistance(*m)<(*i)->getDistance(closestMineral))
+				{	
+					closestMineral=*m;
+
+				}
+			}
+			if (closestMineral != NULL)
+			{
+				if (closestMineral->getPosition().x() > this->commandCenters.at(0)->getPosition().x() || closestMineral->getPosition().y() > this->commandCenters.at(0)->getPosition().y())
+				{
+					this->posMultiplier = -1;
+				}
+			}
 		}
-		
+
 		if ((*i)->getType().isWorker())
 		{
+			workers.push_back(*i);
 			Unit* closestMineral=NULL;
 			for(std::set<Unit*>::iterator m=Broodwar->getMinerals().begin();m!=Broodwar->getMinerals().end();m++)
 			{
@@ -46,10 +66,11 @@ void ExampleAIModule::onStart()
 			{
 				workers.at(0)->rightClick(closestMineral);
 				//(*i)->rightClick(closestMineral);
-				Broodwar->printf("Send worker %d to mineral %d", (*i)->getID(), closestMineral->getID());
+				//Broodwar->printf("Send worker %d to mineral %d", (*i)->getID(), closestMineral->getID());
 			}
 		} 
 	}
+	//Broodwar->printf("%i", this->posMultiplier);
 	initializeBuildingPositions();
 }
 
@@ -109,11 +130,14 @@ void ExampleAIModule::onFrame()
 		oneWorkerSelected = true;
 	}
 
+<<<<<<< HEAD
 	if(Broodwar->self()->gatheredMinerals() >= 150 && !academies.empty())
 	{
 		oneWorkerSelected = true;
 	}
 
+=======
+>>>>>>> ccab0a4c1b30d1c084943179955e83e2db772569
 	for(std::vector<Unit*>::iterator i = workers.begin(); i!=workers.end();i++)
 	{
 		for(std::set<Unit*>::const_iterator g=Broodwar->getGeysers().begin();g!=Broodwar->getGeysers().end();g++)
@@ -135,6 +159,7 @@ void ExampleAIModule::onFrame()
 		if(oneWorkerSelected)
 		{
 			oneWorkerSelected = false;
+<<<<<<< HEAD
 			//build Barracks to the right
 			if(buildAtPos((*i), *buildingPos.at(0), BWAPI::UnitTypes::Terran_Barracks))
 			{	
@@ -161,10 +186,14 @@ void ExampleAIModule::onFrame()
 					
 				}
 			}
+=======
+			buildAtPos((*i), *buildingPos.at(1), BWAPI::UnitTypes::Terran_Supply_Depot);
+			buildAtPos((*i), *buildingPos.at(0), BWAPI::UnitTypes::Terran_Barracks);
+>>>>>>> ccab0a4c1b30d1c084943179955e83e2db772569
 		}
 		if(Broodwar->self()->allUnitCount(BWAPI::UnitTypes::Terran_Marine) < 40)
 		{
-			if(!barracks.empty())
+			if(barracks.size() > 0)
 			{
 				barracks.at(0)->train(BWAPI::UnitTypes::Terran_Marine);
 			}
@@ -175,6 +204,17 @@ void ExampleAIModule::onFrame()
 			commandCenters.at(0)->train(BWAPI::UnitTypes::Terran_SCV);
 		}
 	}
+
+	//for(std::set<Unit*>::const_iterator i=Broodwar->self()->getUnits().begin();i!=Broodwar->self()->getUnits().end();i++)
+ //   {
+	//	if ((*i)->getType() == BWAPI::UnitTypes::Terran_Refinery)
+	//	{
+	//		this->workers.at(3)->rightClick((*i));
+	//		/*Broodwar->printf("built refinery");
+	//		Broodwar->sendText("built refinery");*/
+	//	}
+	//}
+
 	//Call every 100:th frame
 	if (Broodwar->getFrameCount() % 100 == 0)
 	{
@@ -182,12 +222,24 @@ void ExampleAIModule::onFrame()
 		//Iterate through the list of units.
 		for(std::set<Unit*>::const_iterator i=Broodwar->self()->getUnits().begin();i!=Broodwar->self()->getUnits().end();i++)
 		{
+<<<<<<< HEAD
 			if((*i)->getType() == BWAPI::UnitTypes::Terran_Refinery)
 			{
 				this->workers.at(2)->rightClick((*i));
 				this->workers.at(3)->rightClick((*i));
 				refinery = *i;
 			}
+=======
+
+		if ((*i)->getType() == BWAPI::UnitTypes::Terran_Refinery)
+		{
+			if ((*i)->isCompleted());
+			{
+				this->workers.at(3)->rightClick((*i));
+				this->workers.at(2)->rightClick((*i));
+			}
+		}
+>>>>>>> ccab0a4c1b30d1c084943179955e83e2db772569
 			//Check if unit is a worker.
 			if ((*i)->getType().isWorker())
 			{
@@ -448,14 +500,16 @@ void ExampleAIModule::showForces()
 //Called when a unit has been completed, i.e. finished built.
 void ExampleAIModule::onUnitComplete(BWAPI::Unit *unit)
 {
+
 	if(unit->getPlayer() == Broodwar->self())
 	{
-	//	Broodwar->sendText("A %s [%x] has been completed at (%d,%d)",unit->getType().getName().c_str(),unit,unit->getPosition().x(),unit->getPosition().y());
+		Broodwar->sendText("A %s [%x] has been completed at (%d,%d)",unit->getType().getName().c_str(),unit,unit->getPosition().x(),unit->getPosition().y());
 		int scvs = 0;
 		scvs = Broodwar->self()->completedUnitCount(BWAPI::UnitTypes::Terran_SCV);
 		//Broodwar->printf("blabla %i",scvs);
 	}
 
+<<<<<<< HEAD
 	if(unit->getType() == BWAPI::UnitTypes::Terran_Medic)
 	{
 		medics.push_back(unit);
@@ -471,6 +525,9 @@ void ExampleAIModule::onUnitComplete(BWAPI::Unit *unit)
 	}
 
 	else if(unit->getType() == BWAPI::UnitTypes::Terran_Factory)
+=======
+	if(unit->getType() == BWAPI::UnitTypes::Terran_Factory)
+>>>>>>> ccab0a4c1b30d1c084943179955e83e2db772569
 	{
 		factories.push_back(unit);
 	}
@@ -518,8 +575,8 @@ bool ExampleAIModule::buildAtPos(Unit* worker, TilePosition pos, BWAPI::UnitType
 //define all building positions in the base
 void ExampleAIModule::initializeBuildingPositions()
 {
-	
 		//positions for upper starting position
+<<<<<<< HEAD
 		TilePosition *buildBarracks = new TilePosition((*commandCenters.at(0)).getTilePosition().x() + 6, (*commandCenters.at(0)).getTilePosition().y());
 		TilePosition *buildSupplyDepot = new TilePosition((*commandCenters.at(0)).getTilePosition().x(), (*commandCenters.at(0)).getTilePosition().y() + 4);
 		TilePosition *buildSupplyDepot2 = new TilePosition((*commandCenters.at(0)).getTilePosition().x()+3, (*commandCenters.at(0)).getTilePosition().y() + 4);
@@ -534,3 +591,10 @@ void ExampleAIModule::initializeBuildingPositions()
 		buildingPos.push_back(buildSupplyDepot3);
 		buildingPos.push_back(buildSupplyDepot4);
 }
+=======
+		TilePosition *buildBarracks = new TilePosition((*commandCenters.at(0)).getTilePosition().x() + 8 * this->posMultiplier, (*commandCenters.at(0)).getTilePosition().y());
+		TilePosition *buildSupplyDepot = new TilePosition((*commandCenters.at(0)).getTilePosition().x(), (*commandCenters.at(0)).getTilePosition().y() + 8 * this->posMultiplier);
+		buildingPos.push_back(buildBarracks);
+		buildingPos.push_back(buildSupplyDepot);
+}
+>>>>>>> ccab0a4c1b30d1c084943179955e83e2db772569

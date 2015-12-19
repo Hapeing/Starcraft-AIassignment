@@ -55,5 +55,9 @@ private:
 	std::vector <Unit*> academies;
 	std::vector <Unit*> toBuild;
 	std::vector <TilePosition*> buildingPos; 
+<<<<<<< HEAD
 	Unit* refinery;
+=======
+	int posMultiplier;
+>>>>>>> ccab0a4c1b30d1c084943179955e83e2db772569
 };
